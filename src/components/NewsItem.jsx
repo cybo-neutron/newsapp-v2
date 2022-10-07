@@ -6,7 +6,6 @@ export class NewsItem extends Component {
   }
 
   render() {
-    console.log(this.props.source);
     return (
       <div>
         <a

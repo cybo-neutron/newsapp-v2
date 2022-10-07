@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import LoadingGraphics from "./LoadingGraphics";
 import NewsItem from "./NewsItem";
 import PropTypes from "prop-types";
+import InfiniteScroll from "react-infinite-scroll-component";
 
 export class News extends Component {
   static defaultProps = {
@@ -13,15 +14,16 @@ export class News extends Component {
     category: PropTypes.string,
     pageSize: PropTypes.number,
   };
+
   constructor(props) {
     super(props);
     this.state = {
       articles: [],
-      pageNum: 1,
+      page: 1,
       pageLoaded: false,
+      totalResults: 0,
     };
     this.maxPages = 0;
-    this.handlePageTurn = this.handlePageTurn.bind(this);
   }
 
   async componentDidMount() {
@@ -30,27 +32,31 @@ export class News extends Component {
 
   async makeRequest() {
     const API_KEY = process.env.REACT_APP_API_KEY;
-    let url = `https://newsapi.org/v2/top-headlines?country=in&category=${this.props.category}&apiKey=${API_KEY}&page=${this.state.pageNum}&pageSize=${this.props.pageSize}`;
+
+    let url = `https://newsapi.org/v2/top-headlines?country=in&category=${this.props.category}&apiKey=${API_KEY}&page=${this.state.page}&pageSize=${this.props.pageSize}`;
     const response = await fetch(url);
     const jsonData = await response.json();
-    this.maxPages = Math.ceil(jsonData.totalResults / this.props.pageSize);
+
     this.setState({
       articles: jsonData.articles,
-      pageLoaded: true,
+      totalResults: jsonData.totalResults,
+      page: this.state.page + 1,
     });
-    // console.log(url);
-    console.log(jsonData);
   }
 
-  async handlePageTurn(turn) {
-    await this.setState((prevState) => {
-      return {
-        pageNum: prevState.pageNum + turn,
-        pageLoaded: false,
-      };
+  fetchMoreData = async () => {
+    await this.setState((prev) => ({
+      page: prev.page + 1,
+    }));
+
+    const API_KEY = process.env.REACT_APP_API_KEY;
+    let url = `https://newsapi.org/v2/top-headlines?country=in&category=${this.props.category}&apiKey=${API_KEY}&page=${this.state.page}&pageSize=${this.props.pageSize}`;
+    const response = await fetch(url);
+    const jsonData = await response.json();
+    this.setState({
+      articles: this.state.articles.concat(jsonData.articles),
     });
-    await this.makeRequest();
-  }
+  };
 
   render() {
     return (
@@ -58,8 +64,12 @@ export class News extends Component {
         <h1 className="text-xl text-center font-bold my-4">
           Today's Headlines
         </h1>
-        {this.state.pageLoaded || <LoadingGraphics />}
-        {this.state.pageLoaded && (
+        <InfiniteScroll
+          dataLength={this.state.articles.length}
+          next={this.fetchMoreData}
+          hasMore={this.state.articles.length < this.state.totalResults}
+          loader={<LoadingGraphics />}
+        >
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-4 px-2 pt-4">
             {this.state.articles?.map(
               ({
@@ -84,23 +94,7 @@ export class News extends Component {
               )
             )}
           </div>
-        )}
-        <div className="flex justify-between px-4 mt-4">
-          <button
-            className="bg-orange-400 py-2 px-4 rounded-sm font-semibold text-orange-100 disabled:bg-gray-400 disabled:text-gray-300"
-            onClick={() => this.handlePageTurn(-1)}
-            disabled={this.state.pageNum === 1}
-          >
-            &larr; Prev
-          </button>
-          <button
-            className="bg-orange-400 py-2 px-4 rounded-sm font-semibold text-orange-100 disabled:bg-gray-400 disabled:text-gray-300"
-            onClick={() => this.handlePageTurn(1)}
-            disabled={this.state.pageNum >= this.maxPages}
-          >
-            Next&rarr;
-          </button>
-        </div>
+        </InfiniteScroll>
       </div>
     );
   }

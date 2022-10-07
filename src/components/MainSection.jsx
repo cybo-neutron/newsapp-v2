@@ -11,7 +11,7 @@ export class MainSection extends Component {
         <Routes>
           <Route
             path="/"
-            element={<News key="general" category="general" pageSize={15} />}
+            element={<News key="general" category="general" pageSize={10} />}
           />
           <Route
             path="/business"
@@ -55,6 +55,15 @@ export default MainSection;
 
 class HeroSection extends Component {
   render() {
-    return <div className="h-64 bg-gray-600">Hero Section</div>;
+    return (
+      <div className="h-64 bg-gray-600 relative">
+        <img
+          src="tempImage.gif"
+          alt=""
+          className="h-full object-cover w-full"
+        />
+        <div className="absolute h-full w-full bg-gradient-to-t from-transparent to-orange-400 via-orange-300 opacity-40 top-0"></div>
+      </div>
+    );
   }
 }
